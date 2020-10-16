@@ -39,7 +39,6 @@ def update_progress(progress):
     text = "\rPercent: [{0}] {1:.1f}% {2}".format( "#" * block + "-" * (barLength-block), progress*100, status)
     sys.stdout.write(text)
     sys.stdout.flush()
-    time.sleep(0.1)
 
 def prcessing_dir():
     eml_dataframe = pd.DataFrame(columns=headers)
@@ -48,18 +47,19 @@ def prcessing_dir():
     for i, real_file_name in enumerate(glob('*.eml'), 1):
       # File open
       with open(real_file_name, 'r', encoding='UTF8') as fp:
-        msg = email.message_from_file(fp)
-        eml_dict=defaultdict(list,{ key:[] for key in headers })
+        try:
+          msg = email.message_from_file(fp)
+          eml_dict=defaultdict(list,{ key:[] for key in headers })
 
-        # Extract header
-        for msg_header, msg_contents in msg.items():
-          eml_dict['file_name'] = real_file_name
-          for header in eml_dict.keys():
-            if(msg_header == header):
-              eml_dict[header].append(re.sub(r'[\n\t]', '', msg_contents))
-              break;
+          # Extract header
+          for msg_header, msg_contents in msg.items():
+            eml_dict['file_name'] = real_file_name
+            for header in eml_dict.keys():
+              if(msg_header == header):
+                eml_dict[header].append(re.sub(r'[\n\t]', '', msg_contents))
+                break;
 
-        # Extract text content
+          # Extract text content
           if msg.is_multipart():
             for payload in msg.get_payload():
               encodetype=str(payload.get_charsets()[0])
@@ -83,8 +83,14 @@ def prcessing_dir():
               else:
                 text_content = msg.get_payload(decode=True).decode(encodetype,'replace')
 
-        text_content = re.sub('\s+', ' ', text_content)
-        eml_dict['text_content'] = text_content
+          text_content = re.sub('\s+', ' ', text_content)
+          eml_dict['text_content'] = text_content
+		  
+        except Exception as message:
+          print()
+          print(real_file_name + " is Convert Fail...!")
+          print("Caused by : " + str(message))
+          pass
 
       # Convert dictionary to series
       eml_series = pd.Series(eml_dict)
@@ -95,8 +101,8 @@ def prcessing_dir():
     # Iterate over the sequence of column names
     for column in eml_dataframe:
        # Select column contents by column name using [] operator
-      if(column == "text_content" or column == 'file_name'): continue
-      eml_dataframe[column] = [','.join(map(str, l)) for l in eml_dataframe[column]]
+      if(column == "text_content" or column == 'file_name'):
+        eml_dataframe[column] = [','.join(map(str, l)) for l in eml_dataframe[column]]
 
     # Export to csv
     eml_dataframe.to_csv('output.csv', index=False, encoding='utf-8-sig')
@@ -106,43 +112,50 @@ def processing_file(real_file_name):
 
     # File open
     with open(real_file_name, 'r', encoding='UTF8') as fp:
-      msg = email.message_from_file(fp)
-      eml_dict=defaultdict(list,{ key:[] for key in headers })
+      try:
+        msg = email.message_from_file(fp)
+        eml_dict=defaultdict(list,{ key:[] for key in headers })
 
-      # Extract header
-      for msg_header, msg_contents in msg.items():
-        eml_dict['file_name'] = real_file_name
-        for header in eml_dict.keys():
-          if(msg_header == header):
-            eml_dict[header].append(re.sub(r'[\n\t]', '', msg_contents))
-            break;
+        # Extract header
+        for msg_header, msg_contents in msg.items():
+          eml_dict['file_name'] = real_file_name
+          for header in eml_dict.keys():
+            if(msg_header == header):
+              eml_dict[header].append(re.sub(r'[\n\t]', '', msg_contents))
+              break;
 
-      # Extract text content
-      if msg.is_multipart():
-        for payload in msg.get_payload():
-          encodetype=str(payload.get_charsets()[0])
-          if payload.get_content_type() == 'text/html':
-            if encodetype == 'None':
-              text_content = payload.get_payload(decode=True).decode('euc-kr','replace')
-              text_content = html2text(text_content)
-            else:
-              text_content = payload.get_payload(decode=True).decode(encodetype,'replace')
-              text_content = html2text(text_content)
-          elif msg.get_content_type() == 'text/plain':  
+        # Extract text content
+        if msg.is_multipart():
+          for payload in msg.get_payload():
+            encodetype=str(payload.get_charsets()[0])
+            if payload.get_content_type() == 'text/html':
               if encodetype == 'None':
-                text_content = msg.get_payload(decode=True).decode('euc-kr','replace')
+                text_content = payload.get_payload(decode=True).decode('euc-kr','replace')
+                text_content = html2text(text_content)
               else:
-                text_content = msg.get_payload(decode=True).decode(encodetype,'replace')
-      else:
-        encodetype=str(msg.get_charsets()[0])
-        if msg.get_content_type() == 'text/plain':
-          if encodetype == 'None': 
-            text_content = msg.get_payload(decode=True).decode('euc-kr','replace')
-          else:
-            text_content = msg.get_payload(decode=True).decode(encodetype,'replace')
+                text_content = payload.get_payload(decode=True).decode(encodetype,'replace')
+                text_content = html2text(text_content)
+            elif msg.get_content_type() == 'text/plain':  
+                if encodetype == 'None':
+                  text_content = msg.get_payload(decode=True).decode('euc-kr','replace')
+                else:
+                  text_content = msg.get_payload(decode=True).decode(encodetype,'replace')
+        else:
+          encodetype=str(msg.get_charsets()[0])
+          if msg.get_content_type() == 'text/plain':
+            if encodetype == 'None': 
+              text_content = msg.get_payload(decode=True).decode('euc-kr','replace')
+            else:
+              text_content = msg.get_payload(decode=True).decode(encodetype,'replace')
 
-      text_content = re.sub('\s+', ' ', text_content)
-      eml_dict['text_content'] = text_content
+        text_content = re.sub('\s+', ' ', text_content)
+        eml_dict['text_content'] = text_content
+		  
+      except Exception as message:
+        print()
+        print(real_file_name + " is Convert Fail...!")
+        print("Caused by : " + str(message))
+        pass
 
     # Convert dictionary to series
     eml_series = pd.Series(eml_dict)
@@ -157,7 +170,6 @@ def processing_file(real_file_name):
 
     # Export to csv
     eml_dataframe.to_csv('output.csv', index=False, encoding='utf-8-sig')
-
     update_progress(1)
 
 if __name__ == '__main__':
