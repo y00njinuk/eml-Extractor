@@ -102,7 +102,8 @@ def prcessing_dir():
     for column in eml_dataframe:
        # Select column contents by column name using [] operator
       if(column == "text_content" or column == 'file_name'):
-        eml_dataframe[column] = [','.join(map(str, l)) for l in eml_dataframe[column]]
+            continue
+      eml_dataframe[column] = [','.join(map(str, l)) for l in eml_dataframe[column]]
 
     # Export to csv
     eml_dataframe.to_csv('output.csv', index=False, encoding='utf-8-sig')
@@ -165,7 +166,8 @@ def processing_file(real_file_name):
     # Iterate over the sequence of column names
     for column in eml_dataframe:
       # Select column contents by column name using [] operator
-      if(column == "text_content" or column == 'file_name'): continue
+      if(column == "text_content" or column == 'file_name'): 
+        continue
       eml_dataframe[column] = [','.join(map(str, l)) for l in eml_dataframe[column]]
 
     # Export to csv
