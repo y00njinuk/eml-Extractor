@@ -13,6 +13,7 @@ import pandas as pd
 import sys
 import os
 import time
+import csv
 from html2text import html2text
 from glob import glob
 from collections import defaultdict
@@ -21,7 +22,7 @@ from collections import defaultdict
 # Accepts a float between 0 and 1. Any int will be converted to a float.
 # A value under 0 represents a 'halt'.
 # A value at 1 or bigger represents 100%
-def update_progress(progress):
+def update_progress(progress, num):
     barLength = 20 # Modify this to change the length of the progress bar
     status = ""
     if isinstance(progress, int):
@@ -36,12 +37,11 @@ def update_progress(progress):
         progress = 1
         status = "Done...\r\n"
     block = int(round(barLength*progress))
-    text = "\rPercent: [{0}] {1:.1f}% {2}".format( "#" * block + "-" * (barLength-block), progress*100, status)
+    text = "\rNow Finished : {0} EA / Percent: [{1}] {2:.1f}% {3}".format( num, "#" * block + "-" * (barLength-block), progress*100, status)
     sys.stdout.write(text)
     sys.stdout.flush()
 
 def prcessing_dir():
-    eml_dataframe = pd.DataFrame(columns=headers)
     total_size = len(glob('*.eml'))
 
     for i, real_file_name in enumerate(glob('*.eml'), 1):
@@ -57,7 +57,7 @@ def prcessing_dir():
             for header in eml_dict.keys():
               if(msg_header == header):
                 eml_dict[header].append(re.sub(r'[\n\t]', '', msg_contents))
-                break;
+                break
 
           # Extract text content
           if msg.is_multipart():
@@ -91,26 +91,22 @@ def prcessing_dir():
           print(real_file_name + " is Convert Fail...!")
           print("Caused by : " + str(message))
           pass
-
-      # Convert dictionary to series
-      eml_series = pd.Series(eml_dict)
-      # Insert seires to dataframe
-      eml_dataframe = eml_dataframe.append(eml_series, ignore_index=True)
-      update_progress(i/total_size)
-
-    # Iterate over the sequence of column names
-    for column in eml_dataframe:
-       # Select column contents by column name using [] operator
-      if(column == "text_content" or column == 'file_name'):
+        
+        for key, value in eml_dict.items():
+          if(key == "file_name" or key == "text_content"):
             continue
-      eml_dataframe[column] = [','.join(map(str, l)) for l in eml_dataframe[column]]
+          else:
+            eml_dict[key] = "".join(value)
 
-    # Export to csv
-    eml_dataframe.to_csv('output.csv', index=False, encoding='utf-8-sig')
+        # Export to CSV
+        writer.writerow(eml_dict.values())
+        # Update Progress Bar
+        update_progress(i/total_size, i)
+
+    # File Close
+    fp.close()
 
 def processing_file(real_file_name):
-    eml_dataframe = pd.DataFrame(columns=headers)
-
     # File open
     with open(real_file_name, 'r', encoding='UTF8') as fp:
       try:
@@ -122,8 +118,8 @@ def processing_file(real_file_name):
           eml_dict['file_name'] = real_file_name
           for header in eml_dict.keys():
             if(msg_header == header):
-              eml_dict[header].append(re.sub(r'[\n\t]', '', msg_contents))
-              break;
+                eml_dict[header].append(re.sub(r'[\n\t]', '', msg_contents))
+                break
 
         # Extract text content
         if msg.is_multipart():
@@ -158,28 +154,33 @@ def processing_file(real_file_name):
         print("Caused by : " + str(message))
         pass
 
-    # Convert dictionary to series
-    eml_series = pd.Series(eml_dict)
-    # Insert seires to dataframe
-    eml_dataframe = eml_dataframe.append(eml_series, ignore_index=True)
-
-    # Iterate over the sequence of column names
-    for column in eml_dataframe:
-      # Select column contents by column name using [] operator
-      if(column == "text_content" or column == 'file_name'): 
+    for key, value in eml_dict.items():
+      if(key == "file_name" or key == "text_content"):
         continue
-      eml_dataframe[column] = [','.join(map(str, l)) for l in eml_dataframe[column]]
+      else:
+        eml_dict[key] = "".join(value)
 
-    # Export to csv
-    eml_dataframe.to_csv('output.csv', index=False, encoding='utf-8-sig')
-    update_progress(1)
+    # Export to CSV
+    writer.writerow(eml_dict.values())
+    # Update Progress Bar
+    update_progress(1, 1)
+
+    # File Close
+    fp.close()
 
 if __name__ == '__main__':
+    # Load Ouput CSV
+    fp = open("output.csv", "w", newline='', encoding='utf-8-sig')
+    writer = csv.writer(fp)
+
     # Load header information
     with open('header_info.csv', 'r') as fp:
       headers=fp.readline().split(",")
       headers.insert(0, 'file_name')
       headers.insert(1, 'text_content')
+
+    # Write Header  
+    writer.writerow(headers)
 
     if os.path.isdir(sys.argv[1]):
         os.chdir(sys.argv[1])
