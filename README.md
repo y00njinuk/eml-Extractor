@@ -30,7 +30,3 @@ python emlExtracter.py sample
 
 ### 4. 결과
 - 해당 실행파일 경로에 ouput.csv 생성
-
-### 5. 수정중인 작업
-- 대용량 데이터 처리 작업
-- cp-950 인코딩 에러
