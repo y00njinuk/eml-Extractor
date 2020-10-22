@@ -5,11 +5,11 @@
 #               https://thispointer.com/pandas-loop-or-iterate-over-all-or-certain-columns-of-a-dataframe/
 #               https://stackoverflow.com/questions/45306988/column-of-lists-convert-list-to-string-as-a-new-column
 #               https://stackoverflow.com/questions/3160699/python-progress-bar
+#               https://stackoverflow.com/questions/7331351/python-email-header-decoding-utf-8/21715870
 
 import email
 import quopri
 import re 
-import pandas as pd
 import sys
 import os
 import time
@@ -17,6 +17,8 @@ import csv
 from html2text import html2text
 from glob import glob
 from collections import defaultdict
+from email.header import make_header
+from email.header import decode_header
 
 # update_progress() : Displays or updates a console progress bar
 # Accepts a float between 0 and 1. Any int will be converted to a float.
@@ -56,8 +58,8 @@ def prcessing_dir():
             eml_dict['file_name'] = real_file_name
             for header in eml_dict.keys():
               if(msg_header == header):
-                eml_dict[header].append(re.sub(r'[\n\t]', '', msg_contents))
-                break
+                decode_msg_contents = make_header(decode_header(msg_contents))
+                eml_dict[header] = str(decode_msg_contents)  
 
           # Extract text content
           if msg.is_multipart():
@@ -67,12 +69,17 @@ def prcessing_dir():
                 if encodetype == 'None':
                   text_content = payload.get_payload(decode=True).decode('euc-kr','replace')
                   text_content = html2text(text_content)
+                elif encodetype == 'cp-850': 
+                  text_content = payload.get_payload(decode=True).decode('cp850','replace')
+                  text_content = html2text(text_content)
                 else:
                   text_content = payload.get_payload(decode=True).decode(encodetype,'replace')
                   text_content = html2text(text_content)
               elif msg.get_content_type() == 'text/plain':  
                   if encodetype == 'None':
                     text_content = msg.get_payload(decode=True).decode('euc-kr','replace')
+                  elif encodetype == 'cp-850':
+                    text_content = msg.get_payload(decode=True).decode('cp850','replace')
                   else:
                     text_content = msg.get_payload(decode=True).decode(encodetype,'replace')
           else:
@@ -80,6 +87,8 @@ def prcessing_dir():
             if msg.get_content_type() == 'text/plain':
               if encodetype == 'None': 
                 text_content = msg.get_payload(decode=True).decode('euc-kr','replace')
+              elif encodetype == 'cp-850': 
+                text_content = msg.get_payload(decode=True).decode('cp850','replace')
               else:
                 text_content = msg.get_payload(decode=True).decode(encodetype,'replace')
 
@@ -93,10 +102,8 @@ def prcessing_dir():
           pass
         
         for key, value in eml_dict.items():
-          if(key == "file_name" or key == "text_content"):
-            continue
-          else:
-            eml_dict[key] = "".join(value)
+          if not value:
+            eml_dict[key] = ", ".join(value)
 
         # Export to CSV
         writer.writerow(eml_dict.values())
@@ -118,8 +125,9 @@ def processing_file(real_file_name):
           eml_dict['file_name'] = real_file_name
           for header in eml_dict.keys():
             if(msg_header == header):
-                eml_dict[header].append(re.sub(r'[\n\t]', '', msg_contents))
-                break
+              decode_msg_contents = make_header(decode_header(msg_contents))
+              eml_dict[header] = str(decode_msg_contents)
+              break
 
         # Extract text content
         if msg.is_multipart():
@@ -129,12 +137,17 @@ def processing_file(real_file_name):
               if encodetype == 'None':
                 text_content = payload.get_payload(decode=True).decode('euc-kr','replace')
                 text_content = html2text(text_content)
+              elif encodetype == 'cp-850':
+                text_content = payload.get_payload(decode=True).decode('cp850','replace')
+                text_content = html2text(text_content)
               else:
                 text_content = payload.get_payload(decode=True).decode(encodetype,'replace')
                 text_content = html2text(text_content)
             elif msg.get_content_type() == 'text/plain':  
                 if encodetype == 'None':
                   text_content = msg.get_payload(decode=True).decode('euc-kr','replace')
+                elif encodetype == 'cp-850':
+                  text_content = msg.get_payload(decode=True).decode('cp850','replace') 
                 else:
                   text_content = msg.get_payload(decode=True).decode(encodetype,'replace')
         else:
@@ -142,6 +155,8 @@ def processing_file(real_file_name):
           if msg.get_content_type() == 'text/plain':
             if encodetype == 'None': 
               text_content = msg.get_payload(decode=True).decode('euc-kr','replace')
+            elif encodetype == 'cp-850': 
+              text_content = msg.get_payload(decode=True).decode('cp850','replace')  
             else:
               text_content = msg.get_payload(decode=True).decode(encodetype,'replace')
 
@@ -155,10 +170,8 @@ def processing_file(real_file_name):
         pass
 
     for key, value in eml_dict.items():
-      if(key == "file_name" or key == "text_content"):
-        continue
-      else:
-        eml_dict[key] = "".join(value)
+      if not value:
+        eml_dict[key] = ", ".join(value)
 
     # Export to CSV
     writer.writerow(eml_dict.values())
