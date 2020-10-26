@@ -20,10 +20,10 @@ pip install csv
 
 ### 3. 필요한 파일 
 - emlExtracter.py 경로에 header_info.csv
-- emlExtracter.py 경로에 추출할 eml 파일 또는 디렉토리
+- emlExtracter.py 경로에 추출할 eml 디렉토리
 
 ### 3. 사용방법
-- python emlExtracter.py "File or Directory"
+- python emlExtracter.py "Directory명"
 ```
 python emlExtracter.py sample
 ```
