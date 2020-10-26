@@ -62,8 +62,12 @@ def convert_header(real_file_name, header, headerList):
       except Exception as header_decodeError:
         if charset == 'iso-2022-jp': 
           new_charset = 'shift_jis'
+        elif charset == 'shift_jis':
+          new_charset = 'sjis'
         elif charset == 'gb2312':
           new_charset = 'gbk'
+        elif charset == 'iso-8859-8-i':
+          new_charset = 'latin_1'
   
         # [Error] unkonwn-8bit -> euc-kr
         # [Solved] euc-kr -> utf-8 (but, character is garbled)
@@ -186,7 +190,7 @@ def prcessing_dir():
           fp.close()
 
         except Exception as convertError:
-          print("----[Error] File name : " + real_file_name + "\nCaused by : " + str(convertError) + '\n')
+          print("\n----[Error] File name : " + real_file_name + "\nCaused by : " + str(convertError) + '\n')
           continue
 
 if __name__ == '__main__':
