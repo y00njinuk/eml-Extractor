@@ -23,7 +23,7 @@ pip install csv
 - emlExtracter.py 경로에 추출할 eml 디렉토리
 
 ### 3. 사용방법
-- python emlExtracter.py <directory>
+- python emlExtracter.py "<directory>"
 ```
 python emlExtracter.py sample
 ```
